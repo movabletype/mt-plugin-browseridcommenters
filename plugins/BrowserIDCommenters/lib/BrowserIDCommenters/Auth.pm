@@ -12,14 +12,14 @@ sub handle_sign_in {
     my $q = $app->param;
     my $assertion = $q->param("browserid_assertion");
     $assertion =~ s/[^\w\-\.]//g;
-    my ($blog_domain) = $app->blog->archive_url =~ m|^.+://([^/]+)|;
-    print STDERR "login domain: |$blog_domain|\n";
+    my $blog = $app->blog;
+    my ($blog_domain) = ( $blog ? $blog->archive_url : $app->base ) =~ m|^.+://([^/]+)|;
     my $ua = MT->new_ua( { paranoid => 1 } );
 
     require HTTP::Request;
     my $request = HTTP::Request->new(POST => "https://browserid.org/verify");
     $request->content_type('application/x-www-form-urlencoded');
-    $request->content("assertion=".$assertion."&audience=localhost");
+    $request->content("assertion=".$assertion."&audience=$blog_domain");
     my $response = $ua->request($request);
 
     return $app->error("Can not connect to authonticating server, Error Code:".$response->code())
